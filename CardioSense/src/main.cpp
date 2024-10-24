@@ -15,7 +15,7 @@
 
 /**** variáveis globais ****/
 /*  sensor  */
-const int LIMITE_PICO = 2000; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO VALORES VÁLIDOS: 1985 a 2000
+const int LIMITE_PICO = 1980; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO VALORES VÁLIDOS: entre 1985 a 2100
 boolean statusContagem;
 int batida, bpm = 0;
 unsigned long intervalo;
@@ -31,7 +31,7 @@ Adafruit_SSD1306 display(LARGURA, ALTURA, &Wire, -1); // instância do objeto do
 /**************************** FUNÇÕES *********************************************/
 
 /* enviar dados ao servidor */
-void enviarDados(const char *sensor, float batimento)
+void enviarDados(const char* sensor, float batimento)
 {
   if (WiFi.status() == WL_CONNECTED)
   {
@@ -83,6 +83,8 @@ int BPM()
   analogSetAttenuation(ADC_11db);
 
   Serial.println(valorSensor);
+  Serial.print(">Variacao: "); 
+  Serial.println(valorSensor);
 
   if (statusContagem == 0)
   {
@@ -114,6 +116,16 @@ int BPM()
     Serial.println(bpm);
     intervalo = millis();
 
+   display.clearDisplay();
+   display.setCursor(0, 0);
+   display.setTextSize(2);
+   display.setTextWrap(true);
+   display.setTextColor(SSD1306_WHITE);
+   display.print("BPM: ");
+   display.setCursor(64, 32);
+   display.setTextSize(2.5);
+   display.println(bpm);
+   display.display();
   }
 
   //enviarDados("Cardiaco", bpm);
@@ -148,15 +160,15 @@ void setup()
   /* exibir mensagem inicial */
   display.clearDisplay();              // limpar display
   display.setCursor(0, 0);             // definir posição do conteúdo (x, y)
-  display.setTextSize(1);              // tamanho do texto
+  display.setTextSize(1.5);              // tamanho do texto
   display.setTextColor(SSD1306_WHITE); // cor do texto
-  display.print("Cardio");
-  display.print("Sense"); // exibir mensagem
-  display.display();      // mostrar no display
-  display.setTextSize(1);
-  display.println("Precisao em cada batida");
   display.setTextWrap(true);
-  display.display();
+  display.println("Cardio");
+  display.setCursor(32, 16);
+  display.print("Sense"); // exibir mensagem      
+  display.setCursor(0, 21);
+  display.println("Precisao em cada batida");
+  display.display();                // mostrar no display
   delay(4000);
 
   display.clearDisplay();
@@ -165,18 +177,18 @@ void setup()
   display.setTextColor(SSD1306_WHITE);
   display.print("BPM: ");
 
-  /*display.clearDisplay();
+  display.clearDisplay();
   display.setCursor(0, 0);
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
   display.println("Aguardando conexao com wifi...");
-  display.display();*/
+  display.display();
 
   /* conectando ao wifi */
 
   // wfMan.resetSettings();
 
-  /*if (!wfMan.autoConnect("CardioSense", "CardioSense123"))
+  if (!wfMan.autoConnect("CardioSense", "CardioSense123"))
   {
     Serial.println("Falha ao se conectar ao WiFi...");
 
@@ -191,7 +203,6 @@ void setup()
   }
 
   Serial.println("Conexao: OK");
-  Serial.printf("IP: %s\n", WiFi.localIP());
 
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -199,9 +210,7 @@ void setup()
   display.setTextColor(SSD1306_WHITE);
   display.printf("Conectado!");
   display.display();
-  delay(2000);*/
-
-
+  delay(2000);
 
 } // setup
 
