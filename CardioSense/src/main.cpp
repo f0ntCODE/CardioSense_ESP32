@@ -1,3 +1,10 @@
+/*CRÉDITOS:
+
+  -> https://www.chatgpt.org;
+  -> https://www.youtube.com/;
+
+ */
+
 #include <Arduino.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -30,6 +37,33 @@ Adafruit_SSD1306 display(LARGURA, ALTURA, &Wire, -1); // instância do objeto do
 
 /**************************** FUNÇÕES *********************************************/
 
+bool conectado(){
+
+  WiFiManager wfMan;
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.println("Aguardando conexao com wifi...");
+  display.display();
+  
+  
+  if(!wfMan.autoConnect("CardioSense", "CardioSense123")){
+    
+    Serial.println("Conexão: falhou");
+    return false;
+    
+  }
+  else{
+
+    Serial.println("Conexão: OK");
+    return true;
+  }
+
+}
+
+
 /* enviar dados ao servidor */
 void enviarDados(const char* sensor, float batimento)
 {
@@ -39,6 +73,7 @@ void enviarDados(const char* sensor, float batimento)
 
     http.begin(URL_servidor);                           // iniciar conexão com o servidor
     http.addHeader("Content-Type", "application/json"); // cabeçalho json
+    Serial.println("\t Cabeçalho: OK\n");
 
     /*criar JSON*/
     JsonDocument doc;
@@ -47,24 +82,25 @@ void enviarDados(const char* sensor, float batimento)
     String requisicaoCorpo;
     serializeJson(doc, requisicaoCorpo);
 
-    Serial.println("Enviando os dados: " + requisicaoCorpo); // depuração
+    Serial.println("Enviando os dados: " + requisicaoCorpo + "\n"); // depuração
 
     int respostaHttp = http.POST(requisicaoCorpo); // obter resposta do protocolo http
+    Serial.println("\t Obtendo resposta do servidor...\n");
 
     if (respostaHttp > 0)
     {
       String respostaServidor = http.getString();
-      Serial.println("Resposta do servidor: " + respostaServidor);
+      Serial.println("\t Resposta do servidor: " + respostaServidor);
     }
     else
     {
-      Serial.println("Erro ao enviar os dados: " + respostaHttp);
+      Serial.println("\t Erro ao enviar os dados: " + respostaHttp);
     }
     http.end(); // finalizar a conexão http
   }
   else
   {
-    Serial.println("Wifi nao conectado");
+    Serial.println("\t Wifi nao conectado");
 
     display.clearDisplay();
     display.setCursor(0, 0);
@@ -82,9 +118,12 @@ int BPM()
   int valorSensor = analogRead(PINO);
   analogSetAttenuation(ADC_11db);
 
-  Serial.println(valorSensor);
+/* será enviada para o plotter */
+  Serial.println(valorSensor);  
   Serial.print(">Variacao: "); 
   Serial.println(valorSensor);
+
+/*******************************/
 
   if (statusContagem == 0)
   {
@@ -94,7 +133,7 @@ int BPM()
       statusContagem = 1;
       batida++;
       Serial.println("Batida detectada");
-      Serial.print("Batida: ");
+      Serial.print("\tBatida: ");
       Serial.println(batida);
     }
   }
@@ -139,70 +178,38 @@ void setup()
   Serial.begin(TAXA_SERIAL);
 
   /* leitura do sensor */
-  //analogReadResolution(12);       // resolução da leitura analógica para 12 bits
 
   delay(1500);
-
-  WiFiManager wfMan;
-
-  // wfMan.resetSettings();
 
   /* iniciar display */
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, ENDERECO_DISPLAY))
   {
-    Serial.println("Falha de inicializacao do display");
+    Serial.println("\tDisplay: falhou");
     while (true);
   }
 
-  Serial.println("Display: OK");
+  Serial.println("\tDisplay: OK");
 
   /* exibir mensagem inicial */
   display.clearDisplay();              // limpar display
   display.setCursor(0, 0);             // definir posição do conteúdo (x, y)
-  display.setTextSize(1.5);              // tamanho do texto
+  display.setTextSize(2);              // tamanho do texto
   display.setTextColor(SSD1306_WHITE); // cor do texto
   display.setTextWrap(true);
   display.println("Cardio");
   display.setCursor(32, 16);
-  display.print("Sense"); // exibir mensagem      
-  display.setCursor(0, 21);
+  display.print("Sense"); // exibir mensagem  
+  display.setTextSize(2);     
+  display.setCursor(0, 14);
+  display.setTextColor(SSD1306_WHITE); 
   display.println("Precisao em cada batida");
   display.display();                // mostrar no display
   delay(4000);
 
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
-  display.print("BPM: ");
-
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.println("Aguardando conexao com wifi...");
-  display.display();
-
   /* conectando ao wifi */
 
-  // wfMan.resetSettings();
-
-  if (!wfMan.autoConnect("CardioSense", "CardioSense123"))
-  {
-    Serial.println("Falha ao se conectar ao WiFi...");
-
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.println("Falha de conexao com o WiFi");
-    display.display();
-    ESP.restart();
-    delay(1500);
-  }
-
-  Serial.println("Conexao: OK");
+  if(conectado()){
 
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -211,11 +218,31 @@ void setup()
   display.printf("Conectado!");
   display.display();
   delay(2000);
+  }
+
+  else{
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextWrap(true);
+  display.printf("Não foi possível se conectar à rede. Tente novamente");
+  display.display();
+  ESP.restart();
+  delay(2000);
+
+  }
 
 } // setup
 
 void loop()
 {
+
+  if(!conectado()){
+    //aparecer no display um ícone de wifi desconectado. Não é totalmente necessário que haja uma conexão com a rede para o funcionamento do monitor cardíaco, porém, os dados não serão enviados ao servidor
+
+  }
 
   BPM();
   int bpm = BPM();
