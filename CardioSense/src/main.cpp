@@ -22,7 +22,7 @@
 
 /**** variáveis globais ****/
 /*  sensor  */
-const int LIMITE_PICO = 1980; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO VALORES VÁLIDOS: entre 1985 a 2100
+const int LIMITE_PICO = 1990; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO VALORES VÁLIDOS: entre 1980 a 2100
 boolean statusContagem;
 int batida, bpm = 0;
 unsigned long intervalo;
@@ -31,9 +31,19 @@ int PINO = 34; // pino que recebe sinal analógico do sensor
 
 /*  domínio de rede  */
 
-const char *URL_servidor = "http://192.168.xx.xx/php/testePhp/para_projeto/getESP.php"; // rota para se conectar à API coletora
+const char* URL_servidor = "http://192.168.xx.xx/php/testePhp/para_projeto/getESP.php"; // rota para se conectar à API coletora
 
 Adafruit_SSD1306 display(LARGURA, ALTURA, &Wire, -1); // instância do objeto do display oled
+
+/*********** ÍCONE **********/
+
+const unsigned char IconeWifiNaoConectado [] PROGMEM = {
+    0x00, 0x00, 0x00, 0x00, 0x18, 0x3C, 0x7E, 0x7E, 0x66, 0x66, 0x3C, 0x18, 
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81,
+    0x00, 0x00, 0x00, 0x00
+};
+
 
 /**************************** FUNÇÕES *********************************************/
 
@@ -119,7 +129,8 @@ int BPM()
   analogSetAttenuation(ADC_11db);
 
 /* será enviada para o plotter */
-  Serial.println(valorSensor);  
+  Serial.println(valorSensor);
+  
   Serial.print(">Variacao: "); 
   Serial.println(valorSensor);
 
@@ -155,7 +166,7 @@ int BPM()
     Serial.println(bpm);
     intervalo = millis();
 
-   display.clearDisplay();
+   //display.clearDisplay();
    display.setCursor(0, 0);
    display.setTextSize(2);
    display.setTextWrap(true);
@@ -165,9 +176,14 @@ int BPM()
    display.setTextSize(2.5);
    display.println(bpm);
    display.display();
+  
+  if(WiFi.isConnected()){
+    
+    enviarDados("Cardiaco", bpm);
   }
 
-  //enviarDados("Cardiaco", bpm);
+  }
+
 
   return bpm;
 }
@@ -176,10 +192,13 @@ int BPM()
 void setup()
 {
   Serial.begin(TAXA_SERIAL);
+  WiFiManager wf;
+  
+  //wf.resetSettings(); descomentar somente quando estiver em fase de desenvolvimento
 
   /* leitura do sensor */
 
-  delay(1500);
+  delay(1000);
 
   /* iniciar display */
 
@@ -198,10 +217,11 @@ void setup()
   display.setTextColor(SSD1306_WHITE); // cor do texto
   display.setTextWrap(true);
   display.println("Cardio");
+  display.setTextColor(SSD1306_WHITE);
   display.setCursor(32, 16);
   display.print("Sense"); // exibir mensagem  
-  display.setTextSize(2);     
-  display.setCursor(0, 14);
+  display.setTextSize(1);     
+  display.setCursor(0, 20);
   display.setTextColor(SSD1306_WHITE); 
   display.println("Precisao em cada batida");
   display.display();                // mostrar no display
@@ -238,16 +258,14 @@ void setup()
 
 void loop()
 {
+  display.clearDisplay();
 
-  if(!conectado()){
-    //aparecer no display um ícone de wifi desconectado. Não é totalmente necessário que haja uma conexão com a rede para o funcionamento do monitor cardíaco, porém, os dados não serão enviados ao servidor
-
+  if(!WiFi.isConnected()){
+    display.drawBitmap(56, 24, IconeWifiNaoConectado, 16, 16, WHITE); //precisa de correção
+    display.display();
   }
 
   BPM();
-  int bpm = BPM();
-
-  display.println(bpm);
   
-  delay(150);
+  delay(125);
 }
