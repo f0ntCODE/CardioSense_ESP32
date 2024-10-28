@@ -231,7 +231,7 @@ void setup()
 
   /* conectando ao wifi */
 
-  /*if(conectado()){
+  if(conectado()){
 
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -254,13 +254,13 @@ void setup()
   ESP.restart();
   delay(2000);
 
-  }*/
+  }
 
 } // setup
 
 void loop()
 {
-  /*display.clearDisplay();
+  display.clearDisplay();
 
   if(!WiFi.isConnected()){
     display.drawBitmap(56, 24, IconeWifiNaoConectado, 16, 16, WHITE); //precisa de correção
@@ -269,5 +269,5 @@ void loop()
 
   BPM();
   
-  delay(125);*/
+  delay(125);
 }
