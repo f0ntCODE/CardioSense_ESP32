@@ -214,22 +214,24 @@ void setup()
   display.clearDisplay();              // limpar display
   display.setCursor(0, 0);             // definir posição do conteúdo (x, y)
   display.setTextSize(2);              // tamanho do texto
-  display.setTextColor(SSD1306_WHITE); // cor do texto
-  display.setTextWrap(true);
+  display.setTextColor(WHITE); // cor do texto
   display.println("Cardio");
-  display.setTextColor(SSD1306_WHITE);
   display.setCursor(32, 16);
-  display.print("Sense"); // exibir mensagem  
+  display.setTextColor(WHITE);
+  display.print("Sense"); // exibir mensagem
+  display.drawLine(0, 34, 128, 34, WHITE);  
   display.setTextSize(1);     
-  display.setCursor(0, 20);
-  display.setTextColor(SSD1306_WHITE); 
-  display.println("Precisao em cada batida");
+  display.setTextWrap(true);
+  display.setCursor(16, 38);
+  display.println("Precisao em cada");
+  display.setCursor(44, 48);
+  display.println("batida");
   display.display();                // mostrar no display
   delay(4000);
 
   /* conectando ao wifi */
 
-  if(conectado()){
+  /*if(conectado()){
 
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -252,13 +254,13 @@ void setup()
   ESP.restart();
   delay(2000);
 
-  }
+  }*/
 
 } // setup
 
 void loop()
 {
-  display.clearDisplay();
+  /*display.clearDisplay();
 
   if(!WiFi.isConnected()){
     display.drawBitmap(56, 24, IconeWifiNaoConectado, 16, 16, WHITE); //precisa de correção
@@ -267,5 +269,5 @@ void loop()
 
   BPM();
   
-  delay(125);
+  delay(125);*/
 }
