@@ -47,7 +47,7 @@ const unsigned char IconeWifiNaoConectado [] PROGMEM = {
 
 /**************************** FUNÇÕES *********************************************/
 
-bool conectado(){
+void conectar(){
 
   WiFiManager wfMan;
 
@@ -61,14 +61,11 @@ bool conectado(){
   
   if(!wfMan.autoConnect("CardioSense", "CardioSense123")){
     
-    Serial.println("Conexão: falhou");
-    return false;
-    
+    Serial.println("Conexão: desconectado");
   }
   else{
 
     Serial.println("Conexão: OK");
-    return true;
   }
 
 }
@@ -183,8 +180,7 @@ int BPM()
   }
 
   }
-
-
+  
   return bpm;
 }
 
@@ -230,8 +226,9 @@ void setup()
   delay(4000);
 
   /* conectando ao wifi */
+  conectar();
 
-  if(conectado()){
+  if(WiFi.isConnected()){
 
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -262,10 +259,10 @@ void loop()
 {
   display.clearDisplay();
 
-  if(!WiFi.isConnected()){
+  /*if(!WiFi.isConnected()){
     display.drawBitmap(56, 24, IconeWifiNaoConectado, 16, 16, WHITE); //precisa de correção
     display.display();
-  }
+  }*/
 
   BPM();
   
