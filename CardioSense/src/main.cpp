@@ -31,7 +31,10 @@ int PINO = 34; // pino que recebe sinal analógico do sensor
 
 /*  domínio de rede  */
 
-const char* URL_servidor = "http://192.168.xx.xx/php/testePhp/para_projeto/getESP.php"; // rota para se conectar à API coletora
+// const char* URL_servidor = "http://172.18.0.5:80/api/test/esp/post"; // endereço do servidor
+
+const char* URL_teste_api_get = "http://172.18.0.5:80/api/test/esp/get";
+const char* URL_teste_api_post = "http://172.18.0.5:80/api/test/esp/post";
 
 Adafruit_SSD1306 display(LARGURA, ALTURA, &Wire, -1); // instância do objeto do display oled
 
@@ -59,7 +62,7 @@ void conectar(){
   display.display();
   
   
-  if(!wfMan.autoConnect("CardioSense", "CardioSense123")){
+  if(!wfMan.autoConnect("CardioSense-ESP", "cardiosense123")){
     
     Serial.println("Conexão: desconectado");
   }
@@ -70,44 +73,63 @@ void conectar(){
 
 }
 
+// makes a GET REQUEST to the API from ESP32
+void testarAPIGET() {
+   if (WiFi.status() == WL_CONNECTED) {
+      HTTPClient http;
+      http.begin(URL_teste_api_get);  // Endpoint GET
+      int respostaHttp = http.GET();
+      
+      Serial.print("\t Status HTTP: ");
+      Serial.println(respostaHttp);
 
-/* enviar dados ao servidor */
-void enviarDados(const char* sensor, float batimento)
-{
-  if (WiFi.status() == WL_CONNECTED)
-  {
+      if (respostaHttp > 0) {
+         String respostaServidor = http.getString();
+         Serial.println("\t Resposta do servidor: " + respostaServidor);
+      } else {
+         Serial.println("\t Erro ao enviar os dados, código de erro: " + String(respostaHttp));
+      }
+
+      http.end();
+   } else {
+      Serial.println("\t WiFi não conectado");
+   }
+}
+
+
+
+// makes a POST REQUEST to the API from ESP32
+void testarAPIPOST(){
+  
+  if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-
-    http.begin(URL_servidor);                           // iniciar conexão com o servidor
-    http.addHeader("Content-Type", "application/json"); // cabeçalho json
+    http.begin(URL_teste_api_post);
+    http.addHeader("Content-Type", "application/json");
     Serial.println("\t Cabeçalho: OK\n");
 
-    /*criar JSON*/
     JsonDocument doc;
-    doc["sensor"] = sensor; // enviar as variáveis às chaves do JSON
-    doc["valor"] = batimento;
+    doc["sensor"] = "Cardiaco";
+    doc["valor"] = 80;
     String requisicaoCorpo;
     serializeJson(doc, requisicaoCorpo);
 
-    Serial.println("Enviando os dados: " + requisicaoCorpo + "\n"); // depuração
+    Serial.println("Enviando os dados: " + requisicaoCorpo + "\n");
 
-    int respostaHttp = http.POST(requisicaoCorpo); // obter resposta do protocolo http
-    Serial.println("\t Obtendo resposta do servidor...\n");
+    int respostaHttp = http.POST(requisicaoCorpo);
 
-    if (respostaHttp > 0)
-    {
+    Serial.print("\t Status HTTP: "); 
+    Serial.println(respostaHttp); // Mostra o código de status HTTP
+
+    if (respostaHttp > 0) {
       String respostaServidor = http.getString();
       Serial.println("\t Resposta do servidor: " + respostaServidor);
+    } else {
+      Serial.println("\t Erro ao enviar os dados, código de erro: " + String(respostaHttp));
     }
-    else
-    {
-      Serial.println("\t Erro ao enviar os dados: " + respostaHttp);
-    }
-    http.end(); // finalizar a conexão http
-  }
-  else
-  {
-    Serial.println("\t Wifi nao conectado");
+    
+    http.end();
+  } else {
+    Serial.println("\t WiFi não conectado");
 
     display.clearDisplay();
     display.setCursor(0, 0);
@@ -115,7 +137,55 @@ void enviarDados(const char* sensor, float batimento)
     display.println("WiFi desconectado...");
     display.display();
   }
-} // enviarDados
+} 
+
+
+
+// /* enviar dados ao servidor */
+// void enviarDados(const char* sensor, float batimento)
+// {
+//   if (WiFi.status() == WL_CONNECTED)
+//   {
+//     HTTPClient http;
+
+//     http.begin(URL_servidor);                           // iniciar conexão com o servidor
+//     http.addHeader("Content-Type", "application/json"); // cabeçalho json
+//     Serial.println("\t Cabeçalho: OK\n");
+
+//     /*criar JSON*/
+//     JsonDocument doc;
+//     doc["sensor"] = sensor; // enviar as variáveis às chaves do JSON
+//     doc["valor"] = batimento;
+//     String requisicaoCorpo;
+//     serializeJson(doc, requisicaoCorpo);
+
+//     Serial.println("Enviando os dados: " + requisicaoCorpo + "\n"); // depuração
+
+//     int respostaHttp = http.POST(requisicaoCorpo); // obter resposta do protocolo http
+//     Serial.println("\t Obtendo resposta do servidor... BLIBLIBLI\n");
+
+//     if (respostaHttp > 0)
+//     {
+//       String respostaServidor = http.getString();
+//       Serial.println("\t Resposta do servidor: BLOOBLOBLOBLO" + respostaServidor);
+//     }
+//     else
+//     {
+//       Serial.println("\t Erro ao enviar os dados: " + respostaHttp);
+//     }
+//     http.end(); // finalizar a conexão http
+//   }
+//   else
+//   {
+//     Serial.println("\t Wifi nao conectado");
+
+//     display.clearDisplay();
+//     display.setCursor(0, 0);
+//     display.setTextColor(SSD1306_WHITE);
+//     display.println("WiFi desconectado...");
+//     display.display();
+//   }
+// } // enviarDados
 
 /* cosiderar um pico de batimento */
 
@@ -174,10 +244,10 @@ int BPM()
    display.println(bpm);
    display.display();
   
-  if(WiFi.isConnected()){
+  // if(WiFi.isConnected()){
     
-    enviarDados("Cardiaco", bpm);
-  }
+  //   // enviarDados("Cardiaco", bpm);
+  // }
 
   }
   
@@ -190,12 +260,11 @@ void setup()
   Serial.begin(TAXA_SERIAL);
   WiFiManager wf;
   
-  //wf.resetSettings(); descomentar somente quando estiver em fase de desenvolvimento
+  // wf.resetSettings(); // descomentar somente quando estiver em fase de desenvolvimento
 
   /* leitura do sensor */
 
   delay(1000);
-
   /* iniciar display */
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, ENDERECO_DISPLAY))
@@ -259,12 +328,21 @@ void loop()
 {
   display.clearDisplay();
 
+  Serial.println("Host: " + WiFi.localIP().toString());
+  Serial.println("SSID: " + WiFi.SSID());
+  Serial.println("Status: " + WiFi.status());
+
+  display.clearDisplay();
+
+  testarAPIGET();
+  testarAPIPOST();
+
   /*if(!WiFi.isConnected()){
     display.drawBitmap(56, 24, IconeWifiNaoConectado, 16, 16, WHITE); //precisa de correção
     display.display();
   }*/
 
-  BPM();
+  // BPM();
   
-  delay(125);
+  delay(1000);
 }
