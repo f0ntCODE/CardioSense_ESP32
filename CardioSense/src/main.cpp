@@ -22,7 +22,7 @@
 
 /**** variáveis globais ****/
 /*  sensor  */
-const int LIMITE_PICO = 3000; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO VALORES VÁLIDOS: entre 1980 a 2100
+const int LIMITE_PICO = 1990; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO VALORES VÁLIDOS: entre 1980 a 2100
 boolean statusContagem;
 int batida, bpm = 0;
 unsigned long intervalo;
