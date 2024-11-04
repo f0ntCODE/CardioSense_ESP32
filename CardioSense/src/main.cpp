@@ -22,7 +22,7 @@
 
 /**** variáveis globais ****/
 /*  sensor  */
-const int LIMITE_PICO = 1990; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO VALORES VÁLIDOS: entre 1980 a 2100
+const int LIMITE_PICO = 3000; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO VALORES VÁLIDOS: entre 1980 a 2100
 boolean statusContagem;
 int batida, bpm = 0;
 unsigned long intervalo;
@@ -31,10 +31,7 @@ int PINO = 34; // pino que recebe sinal analógico do sensor
 
 /*  domínio de rede  */
 
-// const char* URL_servidor = "http://172.18.0.5:80/api/test/esp/post"; // endereço do servidor
-
-const char* URL_teste_api_get = "http://172.18.0.5:80/api/test/esp/get";
-const char* URL_teste_api_post = "http://172.18.0.5:80/api/test/esp/post";
+const char* URL_servidor = "http://192.168.15.10:80/api/esp/data/receive"; // endereço do servidor
 
 Adafruit_SSD1306 display(LARGURA, ALTURA, &Wire, -1); // instância do objeto do display oled
 
@@ -73,119 +70,45 @@ void conectar(){
 
 }
 
-// makes a GET REQUEST to the API from ESP32
-void testarAPIGET() {
-   if (WiFi.status() == WL_CONNECTED) {
-      HTTPClient http;
-      http.begin(URL_teste_api_get);  // Endpoint GET
-      int respostaHttp = http.GET();
-      
-      Serial.print("\t Status HTTP: ");
-      Serial.println(respostaHttp);
-
-      if (respostaHttp > 0) {
-         String respostaServidor = http.getString();
-         Serial.println("\t Resposta do servidor: " + respostaServidor);
-      } else {
-         Serial.println("\t Erro ao enviar os dados, código de erro: " + String(respostaHttp));
-      }
-
-      http.end();
-   } else {
-      Serial.println("\t WiFi não conectado");
-   }
-}
-
-
-
-// makes a POST REQUEST to the API from ESP32
-void testarAPIPOST(){
-  
-  if (WiFi.status() == WL_CONNECTED) {
+/* enviar dados ao servidor */
+void enviarDados(const char* sensor, float batimento)
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
     HTTPClient http;
-    http.begin(URL_teste_api_post);
-    http.addHeader("Content-Type", "application/json");
+    http.begin(URL_servidor);                           // iniciar conexão com o servidor
+    http.addHeader("Content-Type", "application/json"); // cabeçalho json
     Serial.println("\t Cabeçalho: OK\n");
-
+    /*criar JSON*/
     JsonDocument doc;
-    doc["sensor"] = "Cardiaco";
-    doc["valor"] = 80;
+    doc["sensor"] = sensor; // enviar as variáveis às chaves do JSON
+    doc["valor"] = batimento;
     String requisicaoCorpo;
     serializeJson(doc, requisicaoCorpo);
-
-    Serial.println("Enviando os dados: " + requisicaoCorpo + "\n");
-
-    int respostaHttp = http.POST(requisicaoCorpo);
-
-    Serial.print("\t Status HTTP: "); 
-    Serial.println(respostaHttp); // Mostra o código de status HTTP
-
-    if (respostaHttp > 0) {
+    Serial.println("Enviando os dados: " + requisicaoCorpo + "\n"); // depuração
+    int respostaHttp = http.POST(requisicaoCorpo); // obter resposta do protocolo http
+    Serial.println("\t Obtendo resposta do servidor...\n");
+    if (respostaHttp > 0)
+    {
       String respostaServidor = http.getString();
-      Serial.println("\t Resposta do servidor: " + respostaServidor);
-    } else {
-      Serial.println("\t Erro ao enviar os dados, código de erro: " + String(respostaHttp));
+      Serial.println("\t Resposta do servidor:" + respostaServidor);
     }
-    
-    http.end();
-  } else {
-    Serial.println("\t WiFi não conectado");
-
+    else
+    {
+      Serial.println("\t Erro ao enviar os dados: " + respostaHttp);
+    }
+    http.end(); // finalizar a conexão http
+  }
+  else
+  {
+    Serial.println("\t Wifi nao conectado");
     display.clearDisplay();
     display.setCursor(0, 0);
     display.setTextColor(SSD1306_WHITE);
     display.println("WiFi desconectado...");
     display.display();
   }
-} 
-
-
-
-// /* enviar dados ao servidor */
-// void enviarDados(const char* sensor, float batimento)
-// {
-//   if (WiFi.status() == WL_CONNECTED)
-//   {
-//     HTTPClient http;
-
-//     http.begin(URL_servidor);                           // iniciar conexão com o servidor
-//     http.addHeader("Content-Type", "application/json"); // cabeçalho json
-//     Serial.println("\t Cabeçalho: OK\n");
-
-//     /*criar JSON*/
-//     JsonDocument doc;
-//     doc["sensor"] = sensor; // enviar as variáveis às chaves do JSON
-//     doc["valor"] = batimento;
-//     String requisicaoCorpo;
-//     serializeJson(doc, requisicaoCorpo);
-
-//     Serial.println("Enviando os dados: " + requisicaoCorpo + "\n"); // depuração
-
-//     int respostaHttp = http.POST(requisicaoCorpo); // obter resposta do protocolo http
-//     Serial.println("\t Obtendo resposta do servidor... BLIBLIBLI\n");
-
-//     if (respostaHttp > 0)
-//     {
-//       String respostaServidor = http.getString();
-//       Serial.println("\t Resposta do servidor: BLOOBLOBLOBLO" + respostaServidor);
-//     }
-//     else
-//     {
-//       Serial.println("\t Erro ao enviar os dados: " + respostaHttp);
-//     }
-//     http.end(); // finalizar a conexão http
-//   }
-//   else
-//   {
-//     Serial.println("\t Wifi nao conectado");
-
-//     display.clearDisplay();
-//     display.setCursor(0, 0);
-//     display.setTextColor(SSD1306_WHITE);
-//     display.println("WiFi desconectado...");
-//     display.display();
-//   }
-// } // enviarDados
+} // enviarDados
 
 /* cosiderar um pico de batimento */
 
@@ -224,7 +147,7 @@ int BPM()
     }
   }
 
-  if (millis() - intervalo >= 15000)
+  if (millis() - intervalo >= 1000)
   {
 
     bpm = batida * 4;
@@ -244,10 +167,10 @@ int BPM()
    display.println(bpm);
    display.display();
   
-  // if(WiFi.isConnected()){
-    
-  //   // enviarDados("Cardiaco", bpm);
-  // }
+    if(WiFi.isConnected()){
+      
+      enviarDados("Cardiaco", bpm);
+    }
 
   }
   
@@ -332,17 +255,12 @@ void loop()
   Serial.println("SSID: " + WiFi.SSID());
   Serial.println("Status: " + WiFi.status());
 
-  display.clearDisplay();
-
-  testarAPIGET();
-  testarAPIPOST();
-
   /*if(!WiFi.isConnected()){
     display.drawBitmap(56, 24, IconeWifiNaoConectado, 16, 16, WHITE); //precisa de correção
     display.display();
   }*/
 
-  // BPM();
+  BPM();
   
   delay(1000);
 }
