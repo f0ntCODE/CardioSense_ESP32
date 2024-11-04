@@ -22,7 +22,7 @@
 
 /**** variáveis globais ****/
 /*  sensor  */
-const int LIMITE_PICO = 1990; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO VALORES VÁLIDOS: entre 1980 a 2100
+const int LIMITE_PICO = 3000; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO VALORES VÁLIDOS: entre 1980 a 2100
 boolean statusContagem;
 int batida, bpm = 0;
 unsigned long intervalo;
@@ -31,7 +31,7 @@ int PINO = 34; // pino que recebe sinal analógico do sensor
 
 /*  domínio de rede  */
 
-const char* URL_servidor = "http://192.168.xx.xx/php/testePhp/para_projeto/getESP.php"; // rota para se conectar à API coletora
+const char* URL_servidor = "http://192.168.15.10:80/api/esp/data/receive"; // endereço do servidor
 
 Adafruit_SSD1306 display(LARGURA, ALTURA, &Wire, -1); // instância do objeto do display oled
 
@@ -59,7 +59,7 @@ void conectar(){
   display.display();
   
   
-  if(!wfMan.autoConnect("CardioSense", "CardioSense123")){
+  if(!wfMan.autoConnect("CardioSense-ESP", "cardiosense123")){
     
     Serial.println("Conexão: desconectado");
   }
@@ -70,34 +70,28 @@ void conectar(){
 
 }
 
-
 /* enviar dados ao servidor */
 void enviarDados(const char* sensor, float batimento)
 {
   if (WiFi.status() == WL_CONNECTED)
   {
     HTTPClient http;
-
     http.begin(URL_servidor);                           // iniciar conexão com o servidor
     http.addHeader("Content-Type", "application/json"); // cabeçalho json
     Serial.println("\t Cabeçalho: OK\n");
-
     /*criar JSON*/
     JsonDocument doc;
     doc["sensor"] = sensor; // enviar as variáveis às chaves do JSON
     doc["valor"] = batimento;
     String requisicaoCorpo;
     serializeJson(doc, requisicaoCorpo);
-
     Serial.println("Enviando os dados: " + requisicaoCorpo + "\n"); // depuração
-
     int respostaHttp = http.POST(requisicaoCorpo); // obter resposta do protocolo http
     Serial.println("\t Obtendo resposta do servidor...\n");
-
     if (respostaHttp > 0)
     {
       String respostaServidor = http.getString();
-      Serial.println("\t Resposta do servidor: " + respostaServidor);
+      Serial.println("\t Resposta do servidor:" + respostaServidor);
     }
     else
     {
@@ -108,7 +102,6 @@ void enviarDados(const char* sensor, float batimento)
   else
   {
     Serial.println("\t Wifi nao conectado");
-
     display.clearDisplay();
     display.setCursor(0, 0);
     display.setTextColor(SSD1306_WHITE);
@@ -154,7 +147,7 @@ int BPM()
     }
   }
 
-  if (millis() - intervalo >= 15000)
+  if (millis() - intervalo >= 1000)
   {
 
     bpm = batida * 4;
@@ -174,10 +167,10 @@ int BPM()
    display.println(bpm);
    display.display();
   
-  if(WiFi.isConnected()){
-    
-    enviarDados("Cardiaco", bpm);
-  }
+    if(WiFi.isConnected()){
+      
+      enviarDados("Cardiaco", bpm);
+    }
 
   }
   
@@ -190,12 +183,11 @@ void setup()
   Serial.begin(TAXA_SERIAL);
   WiFiManager wf;
   
-  //wf.resetSettings(); descomentar somente quando estiver em fase de desenvolvimento
+  // wf.resetSettings(); // descomentar somente quando estiver em fase de desenvolvimento
 
   /* leitura do sensor */
 
   delay(1000);
-
   /* iniciar display */
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, ENDERECO_DISPLAY))
@@ -259,6 +251,10 @@ void loop()
 {
   display.clearDisplay();
 
+  Serial.println("Host: " + WiFi.localIP().toString());
+  Serial.println("SSID: " + WiFi.SSID());
+  Serial.println("Status: " + WiFi.status());
+
   /*if(!WiFi.isConnected()){
     display.drawBitmap(56, 24, IconeWifiNaoConectado, 16, 16, WHITE); //precisa de correção
     display.display();
@@ -266,5 +262,5 @@ void loop()
 
   BPM();
   
-  delay(125);
+  delay(1000);
 }
