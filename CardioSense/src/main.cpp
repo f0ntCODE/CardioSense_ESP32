@@ -22,32 +22,34 @@
 
 /**** variáveis globais ****/
 /*  sensor  */
-const int LIMITE_PICO = 1990; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO VALORES VÁLIDOS: entre 1980 a 2100
+const int LIMITE_PICO = 2070; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO 
+
 boolean statusContagem;
 int batida, bpm = 0;
 unsigned long intervalo;
+unsigned long tempoAntigo = 0;
+unsigned long intervaloEnvio = 15000;
 
 int PINO = 34; // pino que recebe sinal analógico do sensor
 
 /*  domínio de rede  */
 
-const char* URL_servidor = "http://192.168.15.10:80/api/esp/data/receive"; // endereço do servidor
+const char *URL_servidor = "http://192.168.15.10:80/api/esp/data/receive"; // endereço do servidor
 
 Adafruit_SSD1306 display(LARGURA, ALTURA, &Wire, -1); // instância do objeto do display oled
 
 /*********** ÍCONE **********/
 
-const unsigned char IconeWifiNaoConectado [] PROGMEM = {
-    0x00, 0x00, 0x00, 0x00, 0x18, 0x3C, 0x7E, 0x7E, 0x66, 0x66, 0x3C, 0x18, 
+const unsigned char IconeWifiNaoConectado[] PROGMEM = {
+    0x00, 0x00, 0x00, 0x00, 0x18, 0x3C, 0x7E, 0x7E, 0x66, 0x66, 0x3C, 0x18,
     0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81,
-    0x00, 0x00, 0x00, 0x00
-};
-
+    0x00, 0x00, 0x00, 0x00};
 
 /**************************** FUNÇÕES *********************************************/
 
-void conectar(){
+void conectar()
+{
 
   WiFiManager wfMan;
 
@@ -57,22 +59,23 @@ void conectar(){
   display.setTextColor(SSD1306_WHITE);
   display.println("Aguardando conexao com wifi...");
   display.display();
-  
-  
-  if(!wfMan.autoConnect("CardioSense-ESP", "cardiosense123")){
-    
+
+  if (!wfMan.autoConnect("CardioSense-ESP", "cardiosense123"))
+  {
+
     Serial.println("Conexão: desconectado");
   }
-  else{
+  else
+  {
 
     Serial.println("Conexão: OK");
   }
-
 }
 
 /* enviar dados ao servidor */
 void enviarDados(const char* sensor, float batimento)
 {
+
   if (WiFi.status() == WL_CONNECTED)
   {
     HTTPClient http;
@@ -81,12 +84,12 @@ void enviarDados(const char* sensor, float batimento)
     Serial.println("\t Cabeçalho: OK\n");
     /*criar JSON*/
     JsonDocument doc;
-    doc["sensor"] = sensor; // enviar as variáveis às chaves do JSON
+    doc["bpm"] = sensor; // enviar as variáveis às chaves do JSON
     doc["valor"] = batimento;
     String requisicaoCorpo;
     serializeJson(doc, requisicaoCorpo);
     Serial.println("Enviando os dados: " + requisicaoCorpo + "\n"); // depuração
-    int respostaHttp = http.POST(requisicaoCorpo); // obter resposta do protocolo http
+    int respostaHttp = http.POST(requisicaoCorpo);                  // obter resposta do protocolo http
     Serial.println("\t Obtendo resposta do servidor...\n");
     if (respostaHttp > 0)
     {
@@ -102,8 +105,8 @@ void enviarDados(const char* sensor, float batimento)
   else
   {
     Serial.println("\t Wifi nao conectado");
-    display.clearDisplay();
-    display.setCursor(0, 0);
+    display.setCursor(0, 62);
+    display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     display.println("WiFi desconectado...");
     display.display();
@@ -118,16 +121,18 @@ int BPM()
   int valorSensor = analogRead(PINO);
   analogSetAttenuation(ADC_11db);
 
-/* será enviada para o plotter */
-  Serial.println(valorSensor);
-  
-  Serial.print(">Variacao: "); 
+  unsigned long tempoAtual = millis();
+
+  /* será enviada para o plotter */
   Serial.println(valorSensor);
 
-/*******************************/
+  Serial.print(">Variacao: ");
+  Serial.println(valorSensor);
 
+  /*******************************/
   if (statusContagem == 0)
   {
+
     if (valorSensor >= LIMITE_PICO)
     {
       Serial.println(valorSensor);
@@ -147,7 +152,7 @@ int BPM()
     }
   }
 
-  if (millis() - intervalo >= 1000)
+  if (millis() - intervalo >= 21000)
   {
 
     bpm = batida * 4;
@@ -156,33 +161,40 @@ int BPM()
     Serial.println(bpm);
     intervalo = millis();
 
-   //display.clearDisplay();
-   display.setCursor(0, 0);
-   display.setTextSize(2);
-   display.setTextWrap(true);
-   display.setTextColor(SSD1306_WHITE);
-   display.print("BPM: ");
-   display.setCursor(64, 32);
-   display.setTextSize(2.5);
-   display.println(bpm);
-   display.display();
-  
-    if(WiFi.isConnected()){
-      
+    // display.clearDisplay();
+    display.setCursor(0, 0);
+    display.setTextSize(2);
+    display.setTextWrap(true);
+    display.setTextColor(SSD1306_WHITE);
+    display.print("BPM: ");
+    display.setCursor(64, 32);
+    display.setTextSize(2);
+    display.println(bpm);
+    display.display();
+
+    if (WiFi.isConnected())
+    {
+
       enviarDados("Cardiaco", bpm);
     }
 
   }
-  
-  return bpm;
+
+  else
+  {
+
+    Serial.println("Não foi possível enviar os dados para a API.");
+  }
+    return bpm;
 }
 
 /**************************** EXECUÇÃO ********************************************/
 void setup()
 {
+
   Serial.begin(TAXA_SERIAL);
   WiFiManager wf;
-  
+
   // wf.resetSettings(); // descomentar somente quando estiver em fase de desenvolvimento
 
   /* leitura do sensor */
@@ -193,56 +205,58 @@ void setup()
   if (!display.begin(SSD1306_SWITCHCAPVCC, ENDERECO_DISPLAY))
   {
     Serial.println("\tDisplay: falhou");
-    while (true);
+    while (true)
+      ;
   }
 
   Serial.println("\tDisplay: OK");
 
   /* exibir mensagem inicial */
-  display.clearDisplay();              // limpar display
-  display.setCursor(0, 0);             // definir posição do conteúdo (x, y)
-  display.setTextSize(2);              // tamanho do texto
+  display.clearDisplay();      // limpar display
+  display.setCursor(0, 0);     // definir posição do conteúdo (x, y)
+  display.setTextSize(2);      // tamanho do texto
   display.setTextColor(WHITE); // cor do texto
   display.println("Cardio");
   display.setCursor(32, 16);
   display.setTextColor(WHITE);
   display.print("Sense"); // exibir mensagem
-  display.drawLine(0, 34, 128, 34, WHITE);  
-  display.setTextSize(1);     
+  display.drawLine(0, 34, 128, 34, WHITE);
+  display.setTextSize(1);
   display.setTextWrap(true);
   display.setCursor(16, 38);
   display.println("Precisao em cada");
   display.setCursor(44, 48);
   display.println("batida");
-  display.display();                // mostrar no display
+  display.display(); // mostrar no display
   delay(4000);
 
   /* conectando ao wifi */
   conectar();
 
-  if(WiFi.isConnected()){
+  if (WiFi.isConnected())
+  {
 
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.printf("Conectado!");
-  display.display();
-  delay(2000);
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.printf("Conectado!");
+    display.display();
+    delay(1000);
   }
 
-  else{
+  else
+  {
 
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setTextWrap(true);
-  display.printf("Não foi possível se conectar à rede. Tente novamente");
-  display.display();
-  ESP.restart();
-  delay(2000);
-
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextWrap(true);
+    display.printf("Não foi possível se conectar à rede. Tente novamente");
+    display.display();
+    ESP.restart();
+    delay(2000);
   }
 
 } // setup
@@ -250,6 +264,8 @@ void setup()
 void loop()
 {
   display.clearDisplay();
+
+  
 
   Serial.println("Host: " + WiFi.localIP().toString());
   Serial.println("SSID: " + WiFi.SSID());
@@ -261,6 +277,8 @@ void loop()
   }*/
 
   BPM();
+
   
-  delay(1000);
+
+  delay(125);
 }
