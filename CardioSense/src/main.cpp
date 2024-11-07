@@ -22,7 +22,7 @@
 
 /**** variáveis globais ****/
 /*  sensor  */
-const int LIMITE_PICO = 2070; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO 
+const int LIMITE_PICO = 2070; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO
 
 boolean statusContagem;
 int batida, bpm = 0;
@@ -34,7 +34,7 @@ int PINO = 34; // pino que recebe sinal analógico do sensor
 
 /*  domínio de rede  */
 
-const char *URL_servidor = "http://192.168.15.10:80/api/esp/data/receive"; // endereço do servidor
+const char *URL_servidor = "http://192.168.15.10:80/api/test/esp/post"; // endereço do servidor
 
 Adafruit_SSD1306 display(LARGURA, ALTURA, &Wire, -1); // instância do objeto do display oled
 
@@ -167,9 +167,10 @@ int BPM()
     display.setTextWrap(true);
     display.setTextColor(SSD1306_WHITE);
     display.print("BPM: ");
-    display.setCursor(64, 32);
+    display.setCursor(16, 24);
     display.setTextSize(2);
     display.println(bpm);
+    //display.drawLine(0, 12, 64, 12, WHITE);
     display.display();
 
     if (WiFi.isConnected())
@@ -231,9 +232,9 @@ void setup()
   delay(4000);
 
   /* conectando ao wifi */
-  conectar();
+  //conectar();
 
-  if (WiFi.isConnected())
+  /*if (WiFi.isConnected())
   {
 
     display.clearDisplay();
@@ -253,11 +254,11 @@ void setup()
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     display.setTextWrap(true);
-    display.printf("Não foi possível se conectar à rede. Tente novamente");
+    display.printf("Nao foi possivel se conectar a rede. Tente novamente");
     display.display();
-    ESP.restart();
+    //ESP.restart();
     delay(2000);
-  }
+  }*/
 
 } // setup
 
@@ -265,7 +266,7 @@ void loop()
 {
   display.clearDisplay();
 
-  
+
 
   Serial.println("Host: " + WiFi.localIP().toString());
   Serial.println("SSID: " + WiFi.SSID());
@@ -278,7 +279,7 @@ void loop()
 
   BPM();
 
-  
+
 
   delay(125);
 }
