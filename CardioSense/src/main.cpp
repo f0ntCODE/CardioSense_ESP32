@@ -1,7 +1,8 @@
 /*CRÉDITOS:
 
   -> https://www.chatgpt.org;
-  -> https://www.youtube.com/;
+  -> https://www.youtube.com;
+  -> https://www.how2electronics.com;
 
  */
 
@@ -20,9 +21,37 @@
 #define TAXA_SERIAL 115200    // taxa de atualização serial
 #define ENDERECO_DISPLAY 0x3c // endereço do display
 
+/****ELEMENTOS DO DISPLAY****/
+const unsigned char coracao[] PROGMEM = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x78, 0x3f, 0xfc, 0x3f, 0xfc, 0x7f, 0xfc, 0x3f, 0xfc,
+    0x3f, 0xfc, 0x1f, 0xf8, 0x0f, 0xf0, 0x07, 0xc0, 0x03, 0x80, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+const unsigned char sem_wifi[] PROGMEM = {
+    0x00, 0x00, 0x08, 0x00, 0x0c, 0x80, 0x06, 0xf8, 0x36, 0x1c, 0x63, 0x06, 0x09, 0xb0, 0x18, 0x98,
+    0x00, 0xc0, 0x06, 0x60, 0x00, 0x20, 0x01, 0xb0, 0x01, 0x80, 0x00, 0x00};
+
+const unsigned char conectado[] PROGMEM = {
+    0x03, 0xc0, 0x1e, 0x78, 0x30, 0x0c, 0x40, 0x02, 0x07, 0xe0, 0x18, 0x18, 0x10, 0x08, 0x03, 0xc0,
+    0x06, 0x60, 0x00, 0x00, 0x01, 0x80, 0x01, 0x80};
+
+const unsigned char logotipo[] PROGMEM = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xff, 0xff, 0x00, 0x03, 0xff, 0xff, 0x00,
+    0x03, 0xff, 0xff, 0x00, 0x03, 0xff, 0xff, 0x80, 0x03, 0x80, 0x07, 0x80, 0x03, 0x80, 0x07, 0x80,
+    0x03, 0x80, 0x03, 0x80, 0x07, 0xff, 0xff, 0x80, 0x07, 0xff, 0xff, 0xc0, 0x0f, 0xff, 0xff, 0xe0,
+    0x1f, 0xff, 0xff, 0xf0, 0x3c, 0x00, 0x00, 0xf0, 0x3c, 0x00, 0x00, 0x70, 0x3c, 0x00, 0x00, 0x70,
+    0x3c, 0x00, 0x00, 0x78, 0x3c, 0x00, 0x00, 0x7e, 0x3c, 0x00, 0x00, 0x7e, 0x3c, 0x00, 0x10, 0x7e,
+    0x3c, 0x00, 0x28, 0x78, 0x3c, 0x00, 0x28, 0x70, 0x3c, 0x08, 0x28, 0x70, 0x3c, 0x18, 0x29, 0x70,
+    0x3c, 0x1a, 0x6b, 0x70, 0x3f, 0xef, 0x4e, 0x70, 0x3c, 0x0d, 0x44, 0x70, 0x3c, 0x01, 0x80, 0x70,
+    0x3c, 0x01, 0x80, 0x70, 0x3c, 0x01, 0x80, 0x70, 0x3c, 0x00, 0x00, 0x70, 0x3c, 0x00, 0x00, 0x70,
+    0x3c, 0x00, 0x00, 0x70, 0x3c, 0x00, 0x00, 0x70, 0x3c, 0x00, 0x00, 0x70, 0x3c, 0x00, 0x00, 0x70,
+    0x1f, 0xff, 0xff, 0xf0, 0x1f, 0xff, 0xff, 0xe0, 0x0f, 0xff, 0xff, 0xc0, 0x07, 0xff, 0xff, 0x80,
+    0x03, 0x80, 0x03, 0x80, 0x03, 0x80, 0x07, 0x80, 0x03, 0x80, 0x07, 0x80, 0x03, 0xc0, 0x07, 0x80,
+    0x03, 0xff, 0xff, 0x80, 0x03, 0xff, 0xff, 0x00, 0x01, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00};
+
 /**** variáveis globais ****/
 /*  sensor  */
-const int LIMITE_PICO = 2070; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO 
+const int LIMITE_PICO = 2070; // define o limite de sinal analógico para considerar um batimento. AJUSTAR PARA CALIBRAÇÃO
 
 boolean statusContagem;
 int batida, bpm = 0;
@@ -38,27 +67,12 @@ const char *URL_servidor = "http://192.168.15.10:80/api/esp/data/receive"; // en
 
 Adafruit_SSD1306 display(LARGURA, ALTURA, &Wire, -1); // instância do objeto do display oled
 
-/*********** ÍCONE **********/
-
-const unsigned char IconeWifiNaoConectado[] PROGMEM = {
-    0x00, 0x00, 0x00, 0x00, 0x18, 0x3C, 0x7E, 0x7E, 0x66, 0x66, 0x3C, 0x18,
-    0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81,
-    0x00, 0x00, 0x00, 0x00};
-
 /**************************** FUNÇÕES *********************************************/
 
 void conectar()
 {
 
   WiFiManager wfMan;
-
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.println("Aguardando conexao com wifi...");
-  display.display();
 
   if (!wfMan.autoConnect("CardioSense-ESP", "cardiosense123"))
   {
@@ -73,7 +87,7 @@ void conectar()
 }
 
 /* enviar dados ao servidor */
-void enviarDados(const char* sensor, float batimento)
+void enviarDados(const char *sensor, float batimento)
 {
 
   if (WiFi.status() == WL_CONNECTED)
@@ -161,23 +175,11 @@ int BPM()
     Serial.println(bpm);
     intervalo = millis();
 
-    // display.clearDisplay();
-    display.setCursor(0, 0);
-    display.setTextSize(2);
-    display.setTextWrap(true);
-    display.setTextColor(SSD1306_WHITE);
-    display.print("BPM: ");
-    display.setCursor(64, 32);
-    display.setTextSize(2);
-    display.println(bpm);
-    display.display();
-
     if (WiFi.isConnected())
     {
 
       enviarDados("Cardiaco", bpm);
     }
-
   }
 
   else
@@ -185,7 +187,7 @@ int BPM()
 
     Serial.println("Não foi possível enviar os dados para a API.");
   }
-    return bpm;
+  return bpm;
 }
 
 /**************************** EXECUÇÃO ********************************************/
@@ -193,13 +195,11 @@ void setup()
 {
 
   Serial.begin(TAXA_SERIAL);
-  WiFiManager wf;
-
-  // wf.resetSettings(); // descomentar somente quando estiver em fase de desenvolvimento
 
   /* leitura do sensor */
 
-  delay(1000);
+  Serial.println("Iniciando sistema...");
+  delay(2000);
   /* iniciar display */
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, ENDERECO_DISPLAY))
@@ -211,53 +211,32 @@ void setup()
 
   Serial.println("\tDisplay: OK");
 
-  /* exibir mensagem inicial */
-  display.clearDisplay();      // limpar display
-  display.setCursor(0, 0);     // definir posição do conteúdo (x, y)
-  display.setTextSize(2);      // tamanho do texto
-  display.setTextColor(WHITE); // cor do texto
-  display.println("Cardio");
-  display.setCursor(32, 16);
-  display.setTextColor(WHITE);
-  display.print("Sense"); // exibir mensagem
-  display.drawLine(0, 34, 128, 34, WHITE);
-  display.setTextSize(1);
-  display.setTextWrap(true);
-  display.setCursor(16, 38);
-  display.println("Precisao em cada");
-  display.setCursor(44, 48);
-  display.println("batida");
-  display.display(); // mostrar no display
-  delay(4000);
+  // exibir mensagem inicial
+   display.clearDisplay();
+   display.drawBitmap(46, 14, logotipo, 32, 49, WHITE);
+   display.setCursor(16, 0);
+   display.setTextSize(1);
+   display.setTextColor(WHITE);
+   display.println("Cardio");
+   display.setCursor(76, 0);
+   display.print("Sense"); // exibir mensagem
+   display.setTextWrap(true);
+   display.display(); // mostrar no display
+   delay(4000);
 
-  /* conectando ao wifi */
+   display.clearDisplay();
+   display.setCursor(32, 0);
+   display.setTextSize(2);
+   display.setTextColor(SSD1306_WHITE);
+   display.printf("AVISO");
+   display.setCursor(4, 16);
+   display.setTextSize(1);
+   display.setTextWrap(true);
+   display.println("Certifique-se de se  conectar a rede para gravar no site \n oficial da \nCardioSense.");
+   display.display();
+   delay(6000);
+
   conectar();
-
-  if (WiFi.isConnected())
-  {
-
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
-    display.printf("Conectado!");
-    display.display();
-    delay(1000);
-  }
-
-  else
-  {
-
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
-    display.setTextWrap(true);
-    display.printf("Não foi possível se conectar à rede. Tente novamente");
-    display.display();
-    ESP.restart();
-    delay(2000);
-  }
 
 } // setup
 
@@ -265,20 +244,36 @@ void loop()
 {
   display.clearDisplay();
 
-  
-
   Serial.println("Host: " + WiFi.localIP().toString());
   Serial.println("SSID: " + WiFi.SSID());
   Serial.println("Status: " + WiFi.status());
 
-  /*if(!WiFi.isConnected()){
-    display.drawBitmap(56, 24, IconeWifiNaoConectado, 16, 16, WHITE); //precisa de correção
-    display.display();
-  }*/
+  /* ALTERAÇÃO DE ÍCONES */
+  if (!WiFi.isConnected())
+  {
+    display.setCursor(54, 22);
+    display.println("Desconectado");
+    display.drawBitmap(80, 40, sem_wifi, 16, 12, WHITE);
+  }
+  else
+  {
+    display.setCursor(64, 22);
+    display.println("Conectado");
+    display.drawBitmap(80, 40, conectado, 16, 12, WHITE);
+  }
 
-  BPM();
-
-  
+  display.setCursor(8, 0);
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.print("BPM");
+  display.setCursor(6, 20);
+  display.println(BPM());
+  display.drawLine(48, 4, 48, 32, WHITE);
+  display.setTextSize(1);
+  display.setCursor(72, 8);
+  display.print("Status: ");
+  display.drawBitmap(18, 40, coracao, 16, 16, WHITE);
+  display.display();
 
   delay(125);
 }
