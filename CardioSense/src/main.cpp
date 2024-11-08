@@ -87,7 +87,7 @@ void conectar()
 }
 
 /* enviar dados ao servidor */
-void enviarDados(const char *sensor, float batimento)
+void enviarDados(float batimento)
 {
 
   if (WiFi.status() == WL_CONNECTED)
@@ -98,8 +98,7 @@ void enviarDados(const char *sensor, float batimento)
     Serial.println("\t Cabeçalho: OK\n");
     /*criar JSON*/
     JsonDocument doc;
-    doc["bpm"] = sensor; // enviar as variáveis às chaves do JSON
-    doc["valor"] = batimento;
+    doc["bpm"] = batimento; // enviar as variáveis às chaves do JSON
     String requisicaoCorpo;
     serializeJson(doc, requisicaoCorpo);
     Serial.println("Enviando os dados: " + requisicaoCorpo + "\n"); // depuração
@@ -156,9 +155,7 @@ int BPM()
       Serial.print("\tBatida: ");
       Serial.println(batida);
     }
-  }
-  else
-  {
+  } else {
 
     if (valorSensor < LIMITE_PICO)
     {
@@ -166,26 +163,28 @@ int BPM()
     }
   }
 
-  if (millis() - intervalo >= 21000)
+  if (millis() - intervalo >= 15000)
   {
+    Serial.println("oi");
 
     bpm = batida * 4;
     batida = 0;
     Serial.print("BPM: ");
     Serial.println(bpm);
     intervalo = millis();
+    Serial.println("Iniciando wifi connect00");
 
     if (WiFi.isConnected())
     {
+      Serial.println("Chamou enviar dados");
 
-      enviarDados("Cardiaco", bpm);
+      enviarDados(bpm);
     }
   }
 
   else
   {
-
-    Serial.println("Não foi possível enviar os dados para a API.");
+    Serial.println("Aguardando tempo de espera para enviar à API");
   }
   return bpm;
 }
@@ -212,29 +211,29 @@ void setup()
   Serial.println("\tDisplay: OK");
 
   // exibir mensagem inicial
-   display.clearDisplay();
-   display.drawBitmap(46, 14, logotipo, 32, 49, WHITE);
-   display.setCursor(16, 0);
-   display.setTextSize(1);
-   display.setTextColor(WHITE);
-   display.println("Cardio");
-   display.setCursor(76, 0);
-   display.print("Sense"); // exibir mensagem
-   display.setTextWrap(true);
-   display.display(); // mostrar no display
-   delay(4000);
+  display.clearDisplay();
+  display.drawBitmap(46, 14, logotipo, 32, 49, WHITE);
+  display.setCursor(16, 0);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.println("Cardio");
+  display.setCursor(76, 0);
+  display.print("Sense"); // exibir mensagem
+  display.setTextWrap(true);
+  display.display(); // mostrar no display
+  delay(4000);
 
-   display.clearDisplay();
-   display.setCursor(32, 0);
-   display.setTextSize(2);
-   display.setTextColor(SSD1306_WHITE);
-   display.printf("AVISO");
-   display.setCursor(4, 16);
-   display.setTextSize(1);
-   display.setTextWrap(true);
-   display.println("Certifique-se de se  conectar a rede para gravar no site \n oficial da \nCardioSense.");
-   display.display();
-   delay(6000);
+  display.clearDisplay();
+  display.setCursor(32, 0);
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+  display.printf("AVISO");
+  display.setCursor(4, 16);
+  display.setTextSize(1);
+  display.setTextWrap(true);
+  display.println("Certifique-se de se  conectar a rede para gravar no site \n oficial da \nCardioSense.");
+  display.display();
+  delay(6000);
 
   conectar();
 
