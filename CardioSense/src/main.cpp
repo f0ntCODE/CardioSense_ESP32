@@ -67,6 +67,10 @@ const char *URL_servidor = "http://192.168.15.10:80/api/esp/data/receive"; // en
 
 Adafruit_SSD1306 display(LARGURA, ALTURA, &Wire, -1); // instância do objeto do display oled
 
+String getToken();
+
+String token = "";
+
 /**************************** FUNÇÕES *********************************************/
 
 void conectar()
@@ -86,8 +90,39 @@ void conectar()
   }
 }
 
+String getToken() {
+  String token = "";
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin("http://192.168.15.10:80/api/esp/generate-token"); // URL do endpoint Laravel para gerar o token
+
+    int respostaHttp = http.GET(); // Faz uma requisição GET
+
+    if (respostaHttp > 0) {
+      String respostaServidor = http.getString();
+      Serial.println("\t Resposta recebida: " + respostaServidor);
+
+      // Faz o parsing da resposta JSON para extrair o token
+      DynamicJsonDocument doc(1024);
+      deserializeJson(doc, respostaServidor);
+      if (doc["status"] == true) {
+        token = doc["token"].as<String>(); // Armazena o token
+        Serial.println("Token salvo: " + token);
+      } else {
+        Serial.println("Erro ao receber o token");
+      }
+    } else {
+      Serial.println("\t Falha na requisição de token: " + respostaHttp);
+    }
+    http.end();
+  } else {
+    Serial.println("\t WiFi não conectado");
+  }
+  return token;
+}
+
 /* enviar dados ao servidor */
-void enviarDados(float batimento)
+void enviarDados(float batimento, String token)
 {
 
   if (WiFi.status() == WL_CONNECTED)
@@ -95,6 +130,7 @@ void enviarDados(float batimento)
     HTTPClient http;
     http.begin(URL_servidor);                           // iniciar conexão com o servidor
     http.addHeader("Content-Type", "application/json"); // cabeçalho json
+    http.addHeader("Authorization", "Bearer " + token);
     Serial.println("\t Cabeçalho: OK\n");
     /*criar JSON*/
     JsonDocument doc;
@@ -128,7 +164,7 @@ void enviarDados(float batimento)
 
 /* cosiderar um pico de batimento */
 
-int BPM()
+int BPM(String token)
 {
 
   int valorSensor = analogRead(PINO);
@@ -178,7 +214,7 @@ int BPM()
     {
       Serial.println("Chamou enviar dados");
 
-      enviarDados(bpm);
+      enviarDados(bpm, token);
     }
   }
 
@@ -236,6 +272,7 @@ void setup()
   delay(6000);
 
   conectar();
+  token = getToken();
 
 } // setup
 
@@ -266,7 +303,7 @@ void loop()
   display.setTextColor(WHITE);
   display.print("BPM");
   display.setCursor(6, 20);
-  display.println(BPM());
+  display.println(BPM(token));
   display.drawLine(48, 4, 48, 32, WHITE);
   display.setTextSize(1);
   display.setCursor(72, 8);
