@@ -63,7 +63,7 @@ int PINO = 34; // pino que recebe sinal analógico do sensor
 
 /*  domínio de rede  */
 
-const char *URL_servidor = "http://192.168.15.10:80/api/esp/data/receive"; // endereço do servidor
+const char *URL_servidor = "http://192.168.104.62:80/api/esp/data/receive"; // endereço do servidor
 
 Adafruit_SSD1306 display(LARGURA, ALTURA, &Wire, -1); // instância do objeto do display oled
 
@@ -194,6 +194,7 @@ void setup()
 {
 
   Serial.begin(TAXA_SERIAL);
+  WiFiManager wifiManager;
 
   /* leitura do sensor */
 
